@@ -11,8 +11,8 @@ public class PIncrement implements Runnable{
 	public static int parallelIncrement(int c, int numThreads){
 		t_lock = new TournamentLock(numThreads);
 		num = c;
-		//incr = 1200000 / numThreads;
-		incr = 1000;
+		incr = 1200000 / numThreads;
+		//incr = 1000;
 		
 		Thread[] threads = new Thread[numThreads];
 		for (int i = 0; i < numThreads; i++) {
@@ -48,7 +48,7 @@ public class PIncrement implements Runnable{
 			num ++;
 			t_lock.unlock(id);
 		}
-		System.out.println(id + " terminating");
+		//System.out.println(id + " terminating");
 		//System.out.println(num);
 	}
 
