@@ -8,18 +8,23 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Monkey {
 
-	static volatile int numOnRope;
-	static volatile int currentDirection;
-	static volatile boolean kongWant;
-	static volatile boolean kongHave;
+	static volatile int numOnRope = 0;
+	static volatile int currentDirection = 2; //empty
+	static volatile boolean kongWant = false;
+	static volatile boolean kongHave = false;
+//	int numOnRope;
+//	int currentDirection;
+//	boolean kongWant;
+//	boolean kongHave;
+	
+	final Lock lock = new ReentrantLock();
+	final Condition notFull  = lock.newCondition();
+	final Condition kongDone  = lock.newCondition();
+	final Condition empty = lock.newCondition();
+	final Condition switchDir = lock.newCondition();
 
 	public Monkey() {
-		final Lock lock = new ReentrantLock();
-		final Condition notFull  = lock.newCondition();
-		final Condition kongDone  = lock.newCondition();
-		final Condition empty = lock.newCondition();
-		final Condition switchDir = lock.newCondition();
-
+		
 	}
 
 	public void ClimbRope(int direction) throws InterruptedException {
@@ -27,24 +32,37 @@ public class Monkey {
 		try { 
 			if (direction == -1){
 				kongWant = true;
+				System.out.println("I am kong");
 				while(numOnRope != 0){
 					empty.await();
+					System.out.println("hear me roar");
 				}
 				kongHave = true;
+				currentDirection = direction;
 				kongWant = false;
 				numOnRope ++;
+				System.out.println(numOnRope);
 			}
 			else{
-				while (direction != currentDirection){
+				while (kongWant || kongHave){
+					System.out.println("momma called the doctor and the doctor said");
+					kongDone.await();
+				}
+				while ((direction != currentDirection) && (currentDirection != 2)){
+					System.out.println("direction");
 					switchDir.await();
+					currentDirection = direction;
 				}
 				while(numOnRope == 3){
+					System.out.println("no more monkeys jumping on the bed");
 					notFull.await();
 				}
 				while (kongWant || kongHave){
+					System.out.println("one fell off and broke his head");
 					kongDone.await();
 				}
-				numOnRope ++;	
+				numOnRope ++;
+				System.out.println(numOnRope);
 			}
 		} finally {
 			lock.unlock();
@@ -57,14 +75,21 @@ public class Monkey {
 			if (kongHave){
 				numOnRope--;
 				kongHave = false;
-				kongDone.signal();
+				currentDirection = 2;
+				kongDone.signalAll();
+				System.out.println("kong sleepy");
 			} else{				
 				numOnRope--;
 				if (numOnRope == 0){
-					currentDirection = 1 - currentDirection;
-					switchDir.signal();
+					currentDirection = 2;
+					if(kongWant)
+						empty.signal();
+					else{
+						switchDir.signal();
+						notFull.signal();
+					}
 				}
-				notFull.signal();
+				System.out.println("the end");
 			}	
 		} finally {
 			lock.unlock();

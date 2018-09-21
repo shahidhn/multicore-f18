@@ -42,6 +42,7 @@ public class SimpleTest {
             // all thread monkeys have one same direction
             threads[i] = new Thread(new ThreadMonkey(monkey, 1));
             threads[i].start();
+            //System.out.println("monkey is airborn");
             // assert at any time the number of monkeys on the rope is <= 3
             Assert.assertTrue(monkey.getNumMonkeysOnRope() <= 3);
             Assert.assertTrue(monkey.getNumMonkeysOnRope() >= 0);
