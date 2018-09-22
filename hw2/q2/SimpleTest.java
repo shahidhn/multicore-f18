@@ -8,7 +8,7 @@ public class SimpleTest {
 
     @Test
     public void testFischer() {
-        int result = q2.a.PIncrement.parallelIncrement(0, 4);
+        int result = q2.a.PIncrement.parallelIncrement(0, 8);
         System.out.println(result);
         // Fischer takes a long time, you could use a small value for test instead
         Assert.assertEquals(result, OPERATIONS);
@@ -16,7 +16,7 @@ public class SimpleTest {
 
     @Test
     public void testLamport() {
-        int result = q2.b.PIncrement.parallelIncrement(0, 4);
+        int result = q2.b.PIncrement.parallelIncrement(0, 8);
         System.out.println(result);
         Assert.assertEquals(result, OPERATIONS);
     }
