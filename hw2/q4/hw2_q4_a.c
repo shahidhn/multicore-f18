@@ -37,11 +37,11 @@ void MatrixMult(char file1[],char file2[],int T){
 
 
 	//#pragma omp for schedule (static, 5)
-	//#pragma omp for
+	#pragma omp for
 	for (r = 0; r < m1r; r++){
 		for (c = 0; c < m2c; c++){
 			sum = 0;
-			#pragma omp parallel for reduction (+:sum)  // this way takes more time to run
+			//#pragma omp parallel for reduction (+:sum)  // this way takes more time to run
 			for (inner = 0; inner < m1c; inner ++){
 				sum += (mat1[r][inner]*mat2[inner][c]);
 			}
