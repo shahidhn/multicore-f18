@@ -23,7 +23,7 @@ public class SimpleTest {
 
     @Test
     public void testAnderson() {
-        int result = q2.c.PIncrement.parallelIncrement(0, 8);
+        int result = q2.c.PIncrement.parallelIncrement(0, 5);
         System.out.println(result);
         Assert.assertEquals(result, OPERATIONS);
     }
