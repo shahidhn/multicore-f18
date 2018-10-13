@@ -131,13 +131,14 @@
 package q6.Tournament;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.*;
 
 public class TournamentLock implements Lock {
 	int q, n, p, z, levels;
 	
-	volatile int[] gate;
-	volatile boolean[] flag;
-	volatile int[] last;
+	volatile AtomicInteger[] gate;
+	volatile AtomicBoolean[] flag;
+	volatile AtomicInteger[] last;
 	
 	public static double log2(int n){
 		return Math.log(n)/Math.log(2);
@@ -150,35 +151,50 @@ public class TournamentLock implements Lock {
 		this.z = numThreads;
 		this.levels = (int) Math.ceil((log2(z)));
 		
-		this.gate = new int[numThreads * z];
-		this.flag = new boolean[n];
-		this.last = new int[p];
+		this.gate = new AtomicInteger[numThreads * z];
+		this.flag = new AtomicBoolean[n];
+		this.last = new AtomicInteger[p];
 		
-		Arrays.fill(this.gate, -1);
-		Arrays.fill(this.flag, false);
+//		Arrays.fill(this.gate, -1);
+//		Arrays.fill(this.flag, false);
+		Arrays.fill(this.gate, new AtomicInteger(-1));
+		Arrays.fill(this.flag, new AtomicBoolean(false));
+		Arrays.fill(this.last, new AtomicInteger());
 	}
 	public void lock(int i) {
 		i ++;
 		int ipid = p + i - 1;
 		
 		for (int j = 0; j < levels; j ++){
-			flag[ipid] = true;
-			last[(ipid-1)/2] = i;
+//			flag[ipid] = true;
+//			last[(ipid-1)/2] = i;
+//			
+//			if (ipid % 2 == 0){
+//				while (flag[ipid-1] && last[(ipid-1)/2] == i);
+//			} else {
+//				while (flag[ipid+1] && last[(ipid-1)/2] == i);
+//			}
+//			
+//			gate[(i-1)*z+j] = ipid;
+//			ipid = (ipid-1)/2;
+			
+			flag[ipid].set(true);
+			last[(ipid-1)/2].set(i);
 			
 			if (ipid % 2 == 0){
-				while (flag[ipid-1] && last[(ipid-1)/2] == i);
+				while (flag[ipid-1].get() && last[(ipid-1)/2].get() == i);
 			} else {
-				while (flag[ipid+1] && last[(ipid-1)/2] == i);
+				while (flag[ipid+1].get() && last[(ipid-1)/2].get() == i);
 			}
 			
-			gate[(i-1)*z+j] = ipid;
+			gate[(i-1)*z+j].set(ipid);
 			ipid = (ipid-1)/2;
 		}
 	}
 	
 	public void unlock(int i) {
 		for (int j = 0; j < levels; j ++){
-			flag[gate[i*z+j]] = false;
+			flag[gate[i*z+j].get()].set(false);
 		}
 	}
 	
