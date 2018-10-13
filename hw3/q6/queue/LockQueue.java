@@ -1,20 +1,39 @@
 package queue;
 
-public class LockQueue implements MyQueue {
-// you are free to add members
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
+public class LockQueue implements MyQueue {
+	Node head, tail;
+	Lock enqlock = new ReentrantLock();
+	Lock deqlock = new ReentrantLock();
+
+	
   public LockQueue() {
-	// implement your constructor here
+	Node node = new Node(-1);
+	head = node;
+	tail = node;
   }
   
   public boolean enq(Integer value) {
-	// implement your enq method here
+	Node node = new Node(value);
+	enqlock.lock();
+	tail.next = node;
+	tail = node;
+	enqlock.unlock();
     return false;
   }
   
   public Integer deq() {
-	// implement your deq method here
-    return null;
+	deqlock.lock();
+	if (head.next == null){
+		deqlock.unlock();
+		return null;
+	}
+	Integer i = head.next.value;
+	head.next = head.next.next;
+	deqlock.unlock();
+    return i;
   }
   
   protected class Node {
