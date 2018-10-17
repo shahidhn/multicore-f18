@@ -1,20 +1,33 @@
 package stack;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class LockFreeStack implements MyStack {
-// you are free to add members
+	AtomicReference<Node> top;
 	
-  public LockFreeStack() {
-	  // implement your constructor here
-  }
+	public LockFreeStack() {
+		top = new AtomicReference<Node>(null);
+	}
 	
   public boolean push(Integer value) {
-	  // implement your push method here
-	  return false;
+	  Node node = new Node(value);
+	  while(true) {
+		  Node oldTop = top.get();
+		  node.next = oldTop;
+		  if (top.compareAndSet(oldTop, node)) return true;
+		  		else Thread.yield();
+	   }
   }
   
   public Integer pop() throws EmptyStack {
-	  // implement your pop method here
-	  return null;
+	  while(true) {
+		  Node oldTop = top.get();
+		  if(oldTop == null) throw new EmptyStack();
+		  Integer val = oldTop.value;
+		  Node newTop = oldTop.next;
+		  if(top.compareAndSet(oldTop, newTop)) return val;
+		   	else Thread.yield();
+		  }
   }
   
   protected class Node {
