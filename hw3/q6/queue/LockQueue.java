@@ -36,6 +36,16 @@ public class LockQueue implements MyQueue {
     return i;
   }
   
+  public String toString() {
+	  String st = "";
+	  Node tempHead = head.next;
+	  while(tempHead != null){
+		  st += tempHead.value + ",";
+		  tempHead = tempHead.next;
+	  }
+	  return st;
+  }
+  
   protected class Node {
 	  public Integer value;
 	  public Node next;
@@ -45,4 +55,7 @@ public class LockQueue implements MyQueue {
 		  next = null;
 	  }
   }
+  
+  
+  
 }
