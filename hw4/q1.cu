@@ -5,6 +5,35 @@ You only need to submit three source code files, e.g. q1.cu, q2.cu and q3.cu and
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define THREADNUM 16
+
+__global__ void min(int *array, int *answer, int n){
+	int chunk_size = n/blockDim.x;
+	int i, localmin = 10000;
+	__shared__ int min[THREADNUM];
+	if (threadIdx.x < blockDim.x-1){
+		for (i = threadIdx.x * chunk_size; i < threadIdx.x * chunk_size + chunk_size; i++){
+			if(array[i] < localmin)
+				localmin = array[i];
+		}
+	}
+	else{
+		for (i = threadIdx.x * chunk_size; i < n; i++){
+			if(array[i] < localmin)
+				localmin = array[i];
+		}
+	}
+	min[threadIdx.x] = localmin;
+	__syncthreads();
+	if(threadIdx.x == 0){
+		int globalmin = 10000;
+		for(i = 0; i < blockDim.x; i ++)
+			if(min[i] < globalmin)
+				globalmin = min[i];
+		*answer = globalmin;
+	}
+
+}
 
 int main(void) {
 	int numcomma = 0;
@@ -30,15 +59,20 @@ int main(void) {
 	fclose(stream);
 
 
+	int *d_array;
+	int answer;
+	int *d_answer;    			
+	int size = sizeof(array);
+	// Allocate space for device copies of array
+	cudaMalloc((void **)&d_array, size);
+	cudaMalloc((void **)&d_answer, sizeof(int));
+	cudaMemcpy(d_array, &array, size, cudaMemcpyHostToDevice);
+
+	min<<<1,THREADNUM>>>(d_array, d_answer, numcomma+1);
+	cudaMemcpy(&answer, d_answer, sizeof(int), cudaMemcpyDeviceToHost);
+	cudaFree(d_answer); cudaFree(d_array);
+	printf("Answer: %d\n", answer);
 }
 
 
 
-
-
-		// int a[];	 			// host copies of a
-		// int *d_a; 	     			// device copies of a
-		// int size = sizeof(int);
-		
-		// // Allocate space for device copies of a, b, c
-		// cudaMalloc((void **)&d_a, size);
