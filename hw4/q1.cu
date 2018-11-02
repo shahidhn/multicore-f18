@@ -6,8 +6,31 @@ You only need to submit three source code files, e.g. q1.cu, q2.cu and q3.cu and
 #include <stdlib.h>
 #include <string.h>
 #define THREADNUM 16
+#define THREADS_PER_BLOCK 1024
 
 __global__ void min(int *array, int *answer, int n){
+	int index = (threadIdx.x + blockIdx.x * blockDim.x)*2;
+
+	int d, val;
+	for (d = n; d >= 1;  d = d/2){
+		if (index < d){
+			val = array[index];
+			if (array[index+1] < val)
+				val = array[index+1];
+		}
+		__syncthreads();
+		if (index < d){
+			array[index/2] = val;
+		}
+		__syncthreads();
+	}
+	*answer = array[0];
+
+/*
+
+
+
+
 	int chunk_size = n/blockDim.x;
 	int i, localmin = 10000;
 	__shared__ int min[THREADNUM];
@@ -32,7 +55,7 @@ __global__ void min(int *array, int *answer, int n){
 				globalmin = min[i];
 		*answer = globalmin;
 	}
-
+*/
 }
 
 __global__ void last_digit(int *array, int *b){
@@ -75,7 +98,7 @@ int main(void) {
 
 	cudaMemcpy(d_array, &array, size, cudaMemcpyHostToDevice);
 
-	min<<<1,THREADNUM>>>(d_array, d_answer, numcomma+1);
+	min<<<(numcomma + THREADS_PER_BLOCK)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(d_array, d_answer, numcomma+1);
 	cudaMemcpy(&answer, d_answer, sizeof(int), cudaMemcpyDeviceToHost);
 
 	last_digit<<<(numcomma+1), 1>>>(d_array, d_b);
