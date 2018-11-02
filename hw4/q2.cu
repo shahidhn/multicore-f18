@@ -35,6 +35,20 @@ __global__ void partb(int *array, int *B, int n){
 
 }
 
+__global__ void partc(int *B, int n){
+	int d, val;
+	
+	for (d = 1; d < n; d = d*2){
+		if (threadIdx.x >= d)
+			val = B[threadIdx.x-d];
+		__syncthreads();
+		if (threadIdx.x >= d)
+			B[threadIdx.x] += val;
+		__syncthreads();	
+	}	
+
+}
+
 
 int main(void) {
 	int numcomma = 0;
@@ -72,12 +86,16 @@ int main(void) {
 	parta<<<(array_len + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(d_array, d_B, array_len);
 	cudaMemcpy(&B, d_B, sizeof(int)*10, cudaMemcpyDeviceToHost);
 	cudaFree(d_B); cudaFree(d_array);
-	printf("b0: %d\n", B[0]);
-	printf("b1: %d\n", B[1]);
-	printf("b5: %d\n", B[5]);
-	printf("total count: %d\n", B[0]+B[1]+B[2]+B[3]+B[4]+B[5]+B[6]+B[7]+B[8]+B[9]);
-	printf("now correct");
-		
+
+	FILE *q2a = fopen("q2a.txt", "w+");
+	for (i = 0; i <= 9; i++){
+		fprintf(q2a, "%d", B[i]);
+		if (i < 9) fprintf(q2a, ", ");
+	}
+	fclose(q2a);
+
+	
+	
 	// Q2b
 	
 	cudaMalloc((void **)&d_array, size);
@@ -87,12 +105,34 @@ int main(void) {
 	partb<<<(array_len + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(d_array, d_B, array_len);
 	cudaMemcpy(&B, d_B, sizeof(int)*10, cudaMemcpyDeviceToHost);
 	cudaFree(d_B); cudaFree(d_array);
-	printf("partB");
-	printf("b0: %d\n", B[0]);
-	printf("b1: %d\n", B[1]);
-	printf("b5: %d\n", B[5]);
-	printf("total count: %d\n", B[0]+B[1]+B[2]+B[3]+B[4]+B[5]+B[6]+B[7]+B[8]+B[9]);
 	
+	FILE *q2b = fopen("q2b.txt", "w+");
+	for (i = 0; i <= 9; i++){
+		fprintf(q2b, "%d", B[i]);
+		if (i < 9) fprintf(q2b, ", ");
+	}
+	fclose(q2b);
+
+
+	// Q2c
+
+
+	cudaMalloc((void **)&d_B, sizeof(int)*10);
+	cudaMemcpy(d_B, &B, sizeof(int)*10, cudaMemcpyHostToDevice);
+
+
+	partc<<<1,10>>>(d_B, array_len);
+	cudaMemcpy(&B, d_B, sizeof(int)*10, cudaMemcpyDeviceToHost);
+	cudaFree(d_B);
+	
+	FILE *q2c = fopen("q2c.txt", "w+");
+	for (i = 0; i <= 9; i++){
+		fprintf(q2c, "%d", B[i]);
+		if (i < 9) fprintf(q2c, ", ");
+	}
+	fclose(q2c);
+
+
 
 
 
