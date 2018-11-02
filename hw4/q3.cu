@@ -5,39 +5,28 @@ You only need to submit three source code files, e.g. q1.cu, q2.cu and q3.cu and
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define THREADNUM 16
+#define NUMBLOCKS 10
 
-__global__ void min(int *array, int *answer, int n){
-	int chunk_size = n/blockDim.x;
-	int i, localmin = 10000;
-	__shared__ int min[THREADNUM];
-	if (threadIdx.x < blockDim.x-1){
-		for (i = threadIdx.x * chunk_size; i < threadIdx.x * chunk_size + chunk_size; i++){
-			if(array[i] < localmin)
-				localmin = array[i];
-		}
-	}
-	else{
-		for (i = threadIdx.x * chunk_size; i < n; i++){
-			if(array[i] < localmin)
-				localmin = array[i];
-		}
-	}
-	min[threadIdx.x] = localmin;
-	__syncthreads();
-	if(threadIdx.x == 0){
-		int globalmin = 10000;
-		for(i = 0; i < blockDim.x; i ++)
-			if(min[i] < globalmin)
-				globalmin = min[i];
-		*answer = globalmin;
-	}
-
+__global__ void convertTo1and0(int *array, int *b){
+	b[blockIdx.x] = array[blockIdx.x] % 2;
 }
 
-__global__ void last_digit(int *array, int *b){
-	b[blockIdx.x] = array[blockIdx.x] % 10;
+__global__ void PPRead(int * b, int * c, int d){
+	if (blockIdx.x >= d) c[blockIdx.x] = b[blockIdx.x - d];
 }
+
+
+__global__ void PPWrite(int * b, int * c, int d){
+	if (blockIdx.x >= d) b[blockIdx.x] += c[blockIdx.x];
+}
+
+__global__ void parallelPrefix(int * b, int *c, int n){
+	for (int d = 1; d < n; d *= 2){
+//		PPRead<<<n, 1>>>(b, c, d);
+//		PPRead<<<n, 1>>>(b, c, d);
+	}	
+}
+
 
 int main(void) {
 	int numcomma = 0;
@@ -51,6 +40,7 @@ int main(void) {
 			numcomma ++;
 	}
 	fclose(stream);
+
 	int array[numcomma+1];
 
 	stream = fopen("inp.txt", "r");
@@ -62,36 +52,36 @@ int main(void) {
 
 
 	int *d_array;
-	int answer;
-	int *d_answer;    			
 	int size = sizeof(array);
-	int *b = (int *) malloc(size);
 	int *d_b;
+	int *d_c;
+	int *d = (int *) malloc(size);
+	int *d_d;
 
-	// Allocate space for device copies of array
-	cudaMalloc((void **)&d_array, size);
-	cudaMalloc((void **)&d_answer, sizeof(int));
+	int *b = (int *) malloc(size);
+
 	cudaMalloc((void **)&d_b, size);
-
+	cudaMalloc((void **)&d_c, size);
+	cudaMalloc((void **)&d_array, size);
+	cudaMalloc((void **)&d_d, size);
 	cudaMemcpy(d_array, &array, size, cudaMemcpyHostToDevice);
 
-	min<<<1,THREADNUM>>>(d_array, d_answer, numcomma+1);
-	cudaMemcpy(&answer, d_answer, sizeof(int), cudaMemcpyDeviceToHost);
-
-	last_digit<<<(numcomma+1), 1>>>(d_array, d_b);
-	cudaMemcpy(b, d_b, size, cudaMemcpyDeviceToHost);
-
-	cudaFree(d_answer); cudaFree(d_array); cudaFree(d_b);
-
-	FILE *q1a = fopen("q1a.txt", "w+");
-	fprintf(q1a, "Min: %d\n", answer);
+	convertTo1and0<<<(numcomma+1), 1>>>(d_array, d_b);
 	
-	FILE *q1b = fopen("q1b.txt", "w+");
-	for (i = 0; i <= numcomma; i ++){
-		fprintf(q1b, "%d", b[i]);
-		if (i < numcomma) fprintf(q1b, ", ");
-	}
-	free(b);
+	for (int d = 1; d <= numcomma; d *= 2){
+		PPRead<<<(numcomma+1), 1>>>(d_b, d_c, d);
+		PPWrite<<<(numcomma+1), 1>>>(d_b, d_c, d);
+	}	
+//	parallelPrefix<<<(numcomma+1), 1>>>(d_b, d_c);		
+
+	cudaMemcpy(b, d_b, size, cudaMemcpyDeviceToHost);
+	for (i = 0; i <= numcomma; i ++) printf("%d ", b[i]);
+
+	cudaFree(d_array); cudaFree(d_d);
+
+	FILE *q3 = fopen("q3.txt", "w+");
+	
+	free(d);
 }
 
 
